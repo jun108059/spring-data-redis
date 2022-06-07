@@ -13,8 +13,6 @@ import practice.springdata.entity.Member;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @SpringBootTest
 public class RedisPojoListTest {
 
@@ -27,8 +25,8 @@ public class RedisPojoListTest {
         ListOperations<String, Member> listOperations = redisTemplate.opsForList();
         String key = "stringKey";
 
-        String temp;
         Member member;
+
         // when
         for (int i = 1; i < 150; i++) {
             member = new Member(i*1000);
@@ -36,37 +34,31 @@ public class RedisPojoListTest {
         }
 
         // then
-//        Member s = listOperations.leftPop(key);
-//        System.out.println("Last List Value = " + s);
+        Long maxIndex = listOperations.size(key);
+        System.out.println("maxIndex = " + maxIndex);
+        int index = 1;
         int start = 0;
-        List<Member> range = listOperations.range(key, start, 100);
-
+        int end = 100;
+        int SIZE = 100;
         // LinkedHashMap Error Fix
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         objectMapper.registerModule(new JavaTimeModule());
 
-        List<Member> convertList = objectMapper.convertValue(range,
-                new TypeReference<>() {});
-
-        System.out.println("range1 = " + range.size());
-        System.out.println("convert List = " + convertList.size());
-        assertThat(range.size()).isEqualTo(101);
-        assertThat(convertList.size()).isEqualTo(101);
-
-        for (Member s1 : convertList) {
-            System.out.println("s1 = " + s1.getMemIdx());
+        List<Member> range;
+        List<Member> convertList;
+        while (start <= maxIndex) {
+            range = listOperations.range(key, start, end);
+            convertList = objectMapper.convertValue(range, new TypeReference<>() {});
+            System.out.println("index : " + index++ + " range = " + range.size());
+            System.out.println("convert List size = " + convertList.size());
+            for (Member memIdx : convertList) {
+                System.out.println("memIdx = " + memIdx.getMemIdx());
+            }
+            System.out.println("=======================================");
+            start += SIZE;
+            end += SIZE;
+            System.out.println("start = " + start);
         }
-        System.out.println("=======================================");
-        range = listOperations.range(key, 100, 200);
-        convertList = objectMapper.convertValue(range,
-                new TypeReference<>() {});
-
-        System.out.println("range2 = " + convertList.size());
-        int index = 0;
-        for (Member s2 : convertList) {
-            System.out.println(" s2 = " + s2.getMemIdx() + " index : " + index++);
-        }
-
     }
 }
